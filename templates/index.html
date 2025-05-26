@@ -128,7 +128,7 @@
             position: relative;
         }
 
-        .observables-textarea {
+        .observables-textarea, textarea[name="observables"] {
             width: 100%;
             min-height: 200px;
             padding: 1.5rem;
@@ -415,16 +415,12 @@
         <div class="form-container">
             <form id="analyzeForm" method="POST" action="/analyze">
                 <label for="observables">Paste your observables here</label><br /><br />
-                <textarea 
-                    name="observables" 
-                    class="observables-textarea"
-                    placeholder="1.2.3.4
+                <textarea name="observables" placeholder="1.2.3.4
 example.com
 d41d8cd98f00b204e9800998ecf8427e
 chrome extension id
-Or just IoC (plain text, separated, html, json, csv, log data, garbage data, fanged data [.] [dot] hxxp, etc.)"
-                    required>
-                </textarea>
+Or just IoC (plain text, separated, html, json, csv, log data, garbage data, fanged data [.] [dot] hxxp, etc.)" required></textarea>
+                <br />
 
 
 
