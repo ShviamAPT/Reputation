@@ -1,186 +1,656 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThreatXchange Reputation - Advanced Threat Intelligence</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block title %}ThreatXchange Reputation{% endblock title %}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2d1b69 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
+        }
 
-{% block content %}
-<div id="startForm">
-    <h1>{{ self.title() }}</h1>
+        /* Animated background particles */
+        .particle {
+            position: absolute;
+            background: rgba(0, 255, 255, 0.1);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 6s ease-in-out infinite;
+        }
 
-    <form id="analyzeForm" method="POST" action="/analyze">
-        <label for="observables">Paste your observables here</label><br /><br />
-        <textarea name="observables" placeholder="1.2.3.4
-example.com
-d41d8cd98f00b204e9800998ecf8427e
-chrome extension id
-Or just IoC (plain text, separated, html, json, csv, log data, garbage data, fanged data [.] [dot] hxxp, etc.)"
-            required></textarea>
-        <br />
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
 
-        <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
-            <button type="submit" class="btn">Start Analysis</button>
-            <label for="saveSelection" id="saveSelectionLabel" onclick="saveSelection()"
-                style="cursor: pointer; font-size: 0.875rem; margin-left: 10px;">
-                Save selection
-            </label>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00);
+            background-size: 300% 300%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 3s ease-in-out infinite;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a0a0ff;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 0.5s forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 2.5rem;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .form-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #ffff00, #00ffff);
+            background-size: 200% 100%;
+            animation: borderFlow 2s linear infinite;
+        }
+
+        @keyframes borderFlow {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 200% 0%; }
+        }
+
+        .input-group {
+            margin-bottom: 2rem;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .textarea-container {
+            position: relative;
+        }
+
+        .observables-textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            color: #fff;
+            font-size: 1rem;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .observables-textarea:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .observables-textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-style: italic;
+        }
+
+        .controls-section {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .analyze-btn {
+            background: linear-gradient(45deg, #00ffff, #0080ff);
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 25px rgba(0, 255, 255, 0.3);
+        }
+
+        .analyze-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .analyze-btn:hover::before {
+            left: 100%;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0, 255, 255, 0.5);
+        }
+
+        .save-selection {
+            color: #ffff00;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 0, 0.3);
+        }
+
+        .save-selection:hover {
+            background: rgba(255, 255, 0, 0.1);
+            transform: scale(1.05);
+        }
+
+        .engines-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .engine-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .engine-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            transition: left 0.3s ease;
+        }
+
+        .engine-card:hover::before {
+            left: 100%;
+        }
+
+        .engine-card:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(0, 255, 255, 0.5);
+        }
+
+        .engine-checkbox {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #00ffff;
+            border-radius: 4px;
+            margin-right: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .engine-checkbox:checked {
+            background: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .engine-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            color: #000;
+            font-weight: bold;
+            top: -2px;
+            left: 3px;
+        }
+
+        .engine-label {
+            color: #fff;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .engine-supports {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 0.5rem;
+        }
+
+        .quick-select {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .quick-select-title {
+            color: #ff00ff;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .quick-select-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            background: rgba(255, 0, 255, 0.1);
+            border: 1px solid rgba(255, 0, 255, 0.3);
+            color: #ff00ff;
+            padding: 0.7rem 1.2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .quick-btn:hover {
+            background: rgba(255, 0, 255, 0.2);
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(255, 0, 255, 0.3);
+        }
+
+        .stats-bar {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00ffff;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .form-container {
+                padding: 1.5rem;
+            }
+            
+            .controls-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .engines-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 255, 255, 0.3);
+            border-top: 3px solid #00ffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">ThreatXchange</h1>
+            <p class="subtitle">Advanced Multi-Engine Threat Intelligence Platform</p>
         </div>
 
-        <div>
-        </div>
+        <div class="form-container">
+            <form id="analyzeForm" method="POST" action="/analyze">
+                <div class="input-group">
+                    <label class="input-label" for="observables">🔍 Input Your Observables</label>
+                    <div class="textarea-container">
+                        <textarea 
+                            name="observables" 
+                            id="observables"
+                            class="observables-textarea"
+                            placeholder="📋 Paste your IoCs here:
 
-        <div>
-            <script>
-                const GUI_ENABLED_ENGINES = JSON.parse('{% if GUI_ENABLED_ENGINES | length > 0 %} {{ GUI_ENABLED_ENGINES | tojson }} {% else %} [] {% endif %}');
-                const allEngines = [
-                    { name: "abuseipdb", label: "AbuseIPDB", supports: "risk", checked: false, title: "Checks AbuseIPDB for IP, reversed obtained IP for a given domain / URL, free API key required" },
-                    { name: "abusix", label: "Abusix", supports: "abuse free_no_key", checked: false, title: "Checks abuse contact with Abusix only for IP, reversed obtained IP for a given domain / URL, free, no API key" },
-                    { name: "alienvault", label: "Alienvault", supports: "hash ip domain url", checked: false, title: "Checks Alienvault for IP, domain, URL, hash, free API key required" },
-                    { name: "criminalip", label: "Criminal IP", supports: "ip", checked: false, title: "Criminal IP is an OSINT search engine specialized in attack surface assessment and threat hunting, free, with paid upgrades available" },
-                    
-                    { name: "github", label: "Github", supports: "domain url ip hash extension free_no_key scraping", checked: false, title: "Get Github grep.app API search results for all types of observable, free, no API key" },
-                    { name: "google", label: "Google", supports: "domain url ip hash extension free_no_key scraping", checked: false, title: "Scraps Google search results for all types of observable, free, no API key" },
-                    { name: "google_dns", label: "Google common DNS records", supports: "domain url ip free_no_key", checked: false, title: "Checks Google common DNS records (A, AAAA, CNAME, NS, MX, TXT, PTR) for IP, domain, URL, free, no API key" },
-                    { name: "google_safe_browsing", label: "Google Safe Browsing", supports: "risk domain ip", checked: false, title: "Checks Google Safe Browsing, free API key required" },
-                    { name: "ioc_one_html", label: "Ioc.One (HTML)", supports: "domain url ip hash extension scraping", checked: false, title: "Scraps (can be long) Ioc.One HTML search results for all types of observable, free, no API key" },
-                    { name: "ioc_one_pdf", label: "Ioc.One (PDF)", supports: "domain url ip hash extension scraping", checked: false, title: "Scraps (can be long) Ioc.One PDF search results for all types of observable, free, no API key" },
-                    { name: "hudsonrock", label: "Hudson Rock", supports: "domain url email free_no_key", checked: false, title: "Searches Hudson Rock leak / infostealer results for domains, URL, Email, free, no API key" },
-                    { name: "ipinfo", label: "IPinfo", supports: "ip", checked: false, title: "Checks IPinfo for IP, reversed obtained IP for a given domain / URL, free API key required" },
-                    { name: "ipquery", label: "IPquery", supports: "default ip risk vpn proxy free_no_key", checked: true, title: "Checks IPquery for IP, reversed obtained IP for a given domain / URL, free, no API key" },
-                    { name: "misp", label: "MISP", supports: "domain url ip hash extension", checked: false, title: "Searches MISP for all types of observable, API key required" },
-                    { name: "phishtank", label: "Phishtank", supports: "risk domain url free_no_key", checked: false, title: "Checks Phishtank for domains, URL, free, no API key" },
-                    { name: "reverse_dns", label: "Reverse DNS", supports: "default domain ip abuse free_no_key", checked: true, title: "Performs a reverse DNS lookup for IP, domain, URL (on your machine)" },
-                    { name: "rdap", label: "RDAP (ex Whois)", supports: "default abuse domain free_no_key", checked: true, title: "Checks RDAP (ex Whois) record for domain, URL, no API key required" },
-                    { name: "shodan", label: "Shodan", supports: "ports ip", checked: false, title: "Checks Shodan, reversed obtained IP for a given domain / URL, free API key required" },
-                    { name: "spur", label: "Spur.us", supports: "vpn proxy free_no_key scraping", checked: false, title: "Scraps Spur.us for IP, reversed obtained IP for a given domain / URL, free, no API key" },
-                    { name: "threatfox", label: "ThreatFox", supports: "ip domain url free_no_key", checked: false, title: "Checks ThreatFox by Abuse.ch for IP, domains, URL, free, no API key" },
-                    { name: "urlscan", label: "URLscan", supports: "domain url ip hash free_no_key", checked: false, title: "Checks URLscan for for IP, domains, URL, hash, free, no API key" },
-                    { name: "virustotal", label: "VirusTotal", supports: "hash risk ip domain url", checked: false, title: "Checks VirusTotal for IP, domain, URL, hash, free API key required" },
-                    
-                ];
+• IP Addresses: 1.2.3.4, 192.168.1.1
+• Domains: example.com, malicious-site.net  
+• URLs: https://suspicious-link.com/path
+• File Hashes: d41d8cd98f00b204e9800998ecf8427e
+• Chrome Extension IDs
+• Email addresses
 
-                const enginesToDisplay = GUI_ENABLED_ENGINES.length > 0 ? allEngines.filter(engine => GUI_ENABLED_ENGINES.includes(engine.name)) : allEngines;
+Supports multiple formats:
+✓ Plain text (line-separated)
+✓ CSV, JSON, XML
+✓ Log data and raw dumps
+✓ Defanged IOCs: hxxp://example[.]com"
+                            required>
+                        </textarea>
+                    </div>
+                </div>
 
-                enginesToDisplay.forEach(engine => {
-                    const label = document.createElement('label');
-                    label.title = engine.title;
-                    label.style.display = 'none'; // Hide the engine selection
-                    const input = document.createElement('input');
-                    input.type = 'checkbox';
-                    input.name = 'engines';
-                    input.value = engine.name;
-                    input.dataset.supports = engine.supports;
-                    input.checked = true; // Auto-select all engines
-                    label.appendChild(input);
-                    label.appendChild(document.createTextNode(` ${engine.label}`));
-                    document.querySelector('#analyzeForm div').appendChild(label);
-                    document.querySelector('#analyzeForm div').appendChild(document.createElement('br'));
-                });
 
-                document.querySelector('#analyzeForm div').appendChild(document.createElement('br'));
-            </script>
-        </div>
 
-        <div>
-            <div class="radio-container" style="display: none;">
-                <input type="radio" id="selectAll" name="engineSelection">
-                <label title="Can be long" for="selectAll" onclick="selectAllEngines()">All</label>
-                <input type="radio" id="selectNone" name="engineSelection">
-                <label title="Clear all engines" for="selectNone" onclick="selectNone()">Clear</label>
-                <input type="radio" id="selectAbuseChecker" name="engineSelection">
-                <label title="Abuse mail, only IP, domain, URL - All free, no key" for="selectAbuseChecker"
-                    onclick="selectAbuseChecker()">Abuse</label>
-                <input type="radio" id="selectHash" name="engineSelection">
-                <label for="selectHash" onclick="selectHash()">Hash</label>
-                <input type="radio" id="selectVpn" name="engineSelection">
-                <label title="Only IP" for="selectVpn" onclick="selectVpn()">VPN / Proxy</label>
-                <input type="radio" id="selectFree" name="engineSelection">
-                <label title="All free engines, no key" for="selectFree" onclick="selectFree()">Free</label>
-                <input type="radio" id="selectExtension" name="engineSelection">
-                <label title="Only Chrome extension" for="selectExtension" onclick="selectExtension()">Extension</label>
-                <input type="radio" id="selectDefault" name="engineSelection" checked>
-                <label title="Good for IP / domain / URL basic info" for="selectDefault"
-                    onclick="selectDefault()">Default</label>
+                <div class="engines-grid" id="enginesGrid" style="display: none;">
+                    <!-- Engines will be populated by JavaScript -->
+                </div>
+
+                <div class="controls-section">
+                    <button type="submit" class="analyze-btn">
+                        🚀 Launch Analysis
+                    </button>
+                </div>
+
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <div class="stat-number" id="selectedCount">22</div>
+                        <div class="stat-label">Engines Selected</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">20+</div>
+                        <div class="stat-label">Available Engines</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">∞</div>
+                        <div class="stat-label">IoCs Supported</div>
+                    </div>
+                </div>
+            </form>
+
+            <div class="loading" id="loadingDiv">
+                <div class="spinner"></div>
+                <p>🔬 Analyzing threats across multiple intelligence sources...</p>
             </div>
         </div>
-        <br />
+    </div>
 
-        <script>
-            function selectAllEngines() {
-                document.querySelectorAll('input[name="engines"]').forEach(checkbox => checkbox.checked = true);
+    <script>
+        // Create animated background particles
+        function createParticles() {
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.width = Math.random() * 4 + 2 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+                document.body.appendChild(particle);
             }
+        }
 
-            function selectNone() {
-                document.querySelectorAll('input[name="engines"]').forEach(checkbox => checkbox.checked = false);
-            }
+        // Engine data
+        const allEngines = [
+            { name: "abuseipdb", label: "AbuseIPDB", supports: "risk", icon: "🛡️", description: "IP reputation and abuse reporting database" },
+            { name: "abusix", label: "Abusix", supports: "abuse free_no_key", icon: "📧", description: "Abuse contact information for networks" },
+            { name: "alienvault", label: "Alienvault OTX", supports: "hash ip domain url", icon: "👁️", description: "Open Threat Exchange intelligence" },
+            { name: "criminalip", label: "Criminal IP", supports: "ip", icon: "🔍", description: "OSINT search engine for threat hunting" },
+            { name: "github", label: "Github Search", supports: "domain url ip hash extension free_no_key scraping", icon: "💻", description: "Code repository threat intelligence" },
+            { name: "google", label: "Google Search", supports: "domain url ip hash extension free_no_key scraping", icon: "🔎", description: "Web search intelligence gathering" },
+            { name: "google_dns", label: "Google DNS", supports: "domain url ip free_no_key", icon: "🌐", description: "DNS records and resolution data" },
+            { name: "google_safe_browsing", label: "Safe Browsing", supports: "risk domain ip", icon: "🛡️", description: "Google's malware and phishing protection" },
+            { name: "ioc_one_html", label: "IOC.One HTML", supports: "domain url ip hash extension scraping", icon: "📄", description: "Threat intelligence aggregation" },
+            { name: "ioc_one_pdf", label: "IOC.One PDF", supports: "domain url ip hash extension scraping", icon: "📄", description: "PDF-based threat reports" },
+            { name: "hudsonrock", label: "Hudson Rock", supports: "domain url email free_no_key", icon: "💎", description: "Cybercrime intelligence platform" },
+            { name: "ipinfo", label: "IPinfo", supports: "ip", icon: "📍", description: "IP geolocation and network data" },
+            { name: "ipquery", label: "IPquery", supports: "default ip risk vpn proxy free_no_key", icon: "🔍", description: "IP intelligence and risk scoring" },
+            { name: "misp", label: "MISP", supports: "domain url ip hash extension", icon: "🔗", description: "Malware information sharing platform" },
+            { name: "phishtank", label: "PhishTank", supports: "risk domain url free_no_key", icon: "🎣", description: "Collaborative phishing database" },
+            { name: "reverse_dns", label: "Reverse DNS", supports: "default domain ip abuse free_no_key", icon: "🔄", description: "DNS reverse lookups" },
+            { name: "rdap", label: "RDAP/Whois", supports: "default abuse domain free_no_key", icon: "📋", description: "Domain registration data" },
+            { name: "shodan", label: "Shodan", supports: "ports ip", icon: "🔍", description: "Internet-connected device search" },
+            { name: "spur", label: "Spur.us", supports: "vpn proxy free_no_key scraping", icon: "🌐", description: "VPN and proxy detection" },
+            { name: "threatfox", label: "ThreatFox", supports: "ip domain url free_no_key", icon: "🦊", description: "Abuse.ch malware intelligence" },
+            { name: "urlscan", label: "URLscan.io", supports: "domain url ip hash free_no_key", icon: "🔬", description: "Website scanning and analysis" },
+            { name: "virustotal", label: "VirusTotal", supports: "hash risk ip domain url", icon: "🔍", description: "Multi-engine malware scanner" }
+        ];
 
-            function selectAbuseChecker() {
-                document.querySelectorAll('input[name="engines"]').forEach(checkbox => {
-                    checkbox.checked = checkbox.dataset.supports.includes('abuse');
-                });
-            }
-
-            function selectHash() {
-                document.querySelectorAll('input[name="engines"]').forEach(checkbox => {
-                    checkbox.checked = checkbox.dataset.supports.includes('hash');
-                });
-            }
-
-            function selectVpn() {
-                document.querySelectorAll('input[name="engines"]').forEach(checkbox => {
-                    checkbox.checked = checkbox.dataset.supports.includes('vpn');
-                });
-            }
-
-            function selectDefault() {
-                document.querySelectorAll('input[name="engines"]').forEach(checkbox => {
-                    checkbox.checked = checkbox.dataset.supports.includes('default');
-                });
-            }
-
-            function selectFree() {
-                document.querySelectorAll('input[name="engines"]').forEach(checkbox => {
-                    checkbox.checked = checkbox.dataset.supports.includes('free_no_key');
-                });
-            }
-
-            function selectExtension() {
-                document.querySelectorAll('input[name="engines"]').forEach(checkbox => {
-                    checkbox.checked = checkbox.dataset.supports.includes('extension');
-                });
-            }
-
-            function saveSelection() {
-                const selectedEngines = Array.from(document.querySelectorAll('input[name="engines"]:checked')).map(checkbox => checkbox.value);
-                localStorage.setItem('selectedEngines', JSON.stringify(selectedEngines));
-                console.log('Selection saved');
-                console.log(selectedEngines);
-
-                const saveLabel = document.getElementById('saveSelectionLabel');
-                saveLabel.innerHTML = 'Saved ✅';
-                setTimeout(() => {
-                    saveLabel.innerHTML = 'Save selection';
-                }, 1000);
-            }
-
-            function restoreSelection() {
-                const savedEngines = JSON.parse(localStorage.getItem('selectedEngines'));
-                if (savedEngines) {
-                    document.querySelectorAll('input[name="engines"]').forEach(checkbox => {
-                        checkbox.checked = savedEngines.includes(checkbox.value);
-                    });
-                }
-            }
-
-            document.addEventListener('DOMContentLoaded', restoreSelection);
-        </script>
-
-        <script>
-            document.getElementById('saveSelectionLabel').addEventListener('mouseover', function () {
-                this.style.textDecoration = 'underline';
+        // Populate engines grid
+        function populateEngines() {
+            const grid = document.getElementById('enginesGrid');
+            
+            allEngines.forEach(engine => {
+                const card = document.createElement('div');
+                card.className = 'engine-card';
+                
+                card.innerHTML = `
+                    <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                        <input type="checkbox" 
+                               class="engine-checkbox" 
+                               name="engines" 
+                               value="${engine.name}"
+                               data-supports="${engine.supports}"
+                               ${engine.supports.includes('default') ? 'checked' : 'checked'}>
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <span style="font-size: 1.2rem;">${engine.icon}</span>
+                                <label class="engine-label">${engine.label}</label>
+                            </div>
+                            <div class="engine-supports">${engine.description}</div>
+                            <div class="engine-supports" style="margin-top: 0.25rem;">
+                                <strong>Supports:</strong> ${engine.supports.replace(/_/g, ' ')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
             });
-            document.getElementById('saveSelectionLabel').addEventListener('mouseout', function () {
-                this.style.textDecoration = 'none';
+            
+            updateSelectedCount();
+        }
+
+        // Engine selection functions
+        function selectAllEngines() {
+            document.querySelectorAll('input[name="engines"]').forEach(checkbox => checkbox.checked = true);
+            updateSelectedCount();
+        }
+
+        function selectNone() {
+            document.querySelectorAll('input[name="engines"]').forEach(checkbox => checkbox.checked = false);
+            updateSelectedCount();
+        }
+
+        function selectAbuseChecker() {
+            document.querySelectorAll('input[name="engines"]').forEach(checkbox => {
+                checkbox.checked = checkbox.dataset.supports.includes('abuse');
             });
-        </script>
-    </form>
-</div>
-{% endblock content %}
+            updateSelectedCount();
+        }
+
+        function selectHash() {
+            document.querySelectorAll('input[name="engines"]').forEach(checkbox => {
+                checkbox.checked = checkbox.dataset.supports.includes('hash');
+            });
+            updateSelectedCount();
+        }
+
+        function selectVpn() {
+            document.querySelectorAll('input[name="engines"]').forEach(checkbox => {
+                checkbox.checked = checkbox.dataset.supports.includes('vpn');
+            });
+            updateSelectedCount();
+        }
+
+        function selectDefault() {
+            document.querySelectorAll('input[name="engines"]').forEach(checkbox => {
+                checkbox.checked = checkbox.dataset.supports.includes('default');
+            });
+            updateSelectedCount();
+        }
+
+        function selectFree() {
+            document.querySelectorAll('input[name="engines"]').forEach(checkbox => {
+                checkbox.checked = checkbox.dataset.supports.includes('free_no_key');
+            });
+            updateSelectedCount();
+        }
+
+        function selectExtension() {
+            document.querySelectorAll('input[name="engines"]').forEach(checkbox => {
+                checkbox.checked = checkbox.dataset.supports.includes('extension');
+            });
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const count = document.querySelectorAll('input[name="engines"]:checked').length;
+            document.getElementById('selectedCount').textContent = count;
+        }
+
+        function saveSelection() {
+            const selectedEngines = Array.from(document.querySelectorAll('input[name="engines"]:checked')).map(checkbox => checkbox.value);
+            const saveBtn = document.querySelector('.save-selection');
+            
+            saveBtn.innerHTML = '✅ Saved!';
+            saveBtn.style.color = '#00ff00';
+            
+            setTimeout(() => {
+                saveBtn.innerHTML = '💾 Save Selection';
+                saveBtn.style.color = '#ffff00';
+            }, 2000);
+        }
+
+        // Form submission handler
+        document.getElementById('analyzeForm').addEventListener('submit', function(e) {
+            const selectedEngines = document.querySelectorAll('input[name="engines"]:checked');
+            if (selectedEngines.length === 0) {
+                e.preventDefault();
+                alert('⚠️ Please select at least one analysis engine!');
+                return;
+            }
+            
+            // Show loading animation
+            document.querySelector('.form-container').style.display = 'none';
+            document.getElementById('loadingDiv').style.display = 'block';
+        });
+
+        // Add event listeners for checkbox changes
+        document.addEventListener('change', function(e) {
+            if (e.target.name === 'engines') {
+                updateSelectedCount();
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            populateEngines();
+        });
+    </script>
+</body>
+</html>
