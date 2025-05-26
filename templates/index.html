@@ -121,9 +121,7 @@
             font-size: 1.1rem;
             font-weight: 600;
             margin-bottom: 1rem;
-            color: #00ffff;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            color: #fff;
         }
 
         .textarea-container {
@@ -416,31 +414,17 @@
 
         <div class="form-container">
             <form id="analyzeForm" method="POST" action="/analyze">
-                <div class="input-group">
-                    <label class="input-label" for="observables">🔍 Input Your Observables</label>
-                    <div class="textarea-container">
-                        <textarea 
-                            name="observables" 
-                            id="observables"
-                            class="observables-textarea"
-                            placeholder="📋 Paste your IoCs here:
-
-• IP Addresses: 1.2.3.4, 192.168.1.1
-• Domains: example.com, malicious-site.net  
-• URLs: https://suspicious-link.com/path
-• File Hashes: d41d8cd98f00b204e9800998ecf8427e
-• Chrome Extension IDs
-• Email addresses
-
-Supports multiple formats:
-✓ Plain text (line-separated)
-✓ CSV, JSON, XML
-✓ Log data and raw dumps
-✓ Defanged IOCs: hxxp://example[.]com"
-                            required>
-                        </textarea>
-                    </div>
-                </div>
+                <label for="observables">Paste your observables here</label><br /><br />
+                <textarea 
+                    name="observables" 
+                    class="observables-textarea"
+                    placeholder="1.2.3.4
+example.com
+d41d8cd98f00b204e9800998ecf8427e
+chrome extension id
+Or just IoC (plain text, separated, html, json, csv, log data, garbage data, fanged data [.] [dot] hxxp, etc.)"
+                    required>
+                </textarea>
 
 
 
